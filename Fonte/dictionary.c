@@ -928,8 +928,22 @@ void adicionaBT(char *nomeTabela, char *nomeAtrib) {
  */
 
 void freeTp_table(tp_table **tabela, int n) {
-	free(tabela);
+    if (tabela == NULL) {
+        return;
+    }
+
+    for (int i = 0; i < n; i++) {
+        tp_table *no = tabela[i];
+        while (no != NULL) {
+            tp_table *next = no->next;
+            free(no);
+            no = next;
+        }
+    }
+
+    free(tabela);
 }
+
 
 
 void freeTable(table *tabela) {
