@@ -299,6 +299,42 @@ int verificaChavePK(char *nomeTabela, column *c, char *nomeCampo, char *valorCam
     free(tabela);
     return SUCCESS;
 }
+//TRANSAÇÕES
+transaction *active_transactions = NULL;
+int currentTid = 0;
+
+transaction* start_transaction() {
+    transaction *t = (transaction*)malloc(sizeof(transaction));
+    t->id = ++currentTid;
+    t->log = NULL;
+    t->next = active_transactions;
+    active_transactions = t;
+    return t;
+}
+void commitTransaction(transaction* t) {
+    if (t == NULL) {
+        printf("Sem transacoes\n");
+        return;
+    }
+
+    //TO-DO: Limpar os dados do log da transação
+
+    if (active_transactions == t) {
+        active_transactions = t->next;
+    } else {
+        transaction* prev = active_transactions;
+        while (prev->next != t) {
+            prev = prev->next;
+        }
+        prev->next = t->next;
+    }
+    int id = t->id;
+    free(t);
+    printf("Transaction %d committed\n", id);
+}
+void end_transaction(transaction* t){
+      return commitTransaction(t);
+}
 
 /////
 int finalizaInsert(char *nome, column *c){

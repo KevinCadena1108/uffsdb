@@ -74,6 +74,20 @@ typedef struct rc_parser {
     int         consoleFlag;   // Auxiliar para não imprimir duas vezes nome=#
 }rc_parser;
 
+typedef struct transaction_log {
+    char operacao[10];  //Operação (insert,delete,update)
+    char tabela[20];    //Nome da tabela
+    column dados;       //Dados da operação
+    struct transaction_log *next;  //Próxima operação no log
+} transaction_log;
+
+typedef struct transaction {
+    int id;
+    transaction_log *log; //Log de operações
+    struct transaction *next;  //Próxima transação
+
+} transaction;
+
 typedef struct data_base{
 	char 		valid;
 	char 		db_name[LEN_DB_NAME_IO];
@@ -89,7 +103,6 @@ typedef struct db_connected {
 // Union's utilizados na conversão de variáveis do tipo inteiro e double.
 
 union c_double{
-
     double dnum;
     char double_cnum[sizeof(double)];
 };
