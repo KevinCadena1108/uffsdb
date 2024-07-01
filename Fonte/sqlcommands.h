@@ -54,7 +54,7 @@ int excluirTabela(char *);
                 SUCCESS,
                 ERRO_DE_PARAMETRO.
    ---------------------------------------------------------------------------------------------*/
-int createIndex(rc_insert *);
+void createIndex(rc_insert *t);
 /* ----------------------------------------------------------------------------------------------
     Objetivo:   Copia todas as informações menos a tabela do objeto, que será removida.
     Parametros: Objeto que será removido do schema.
@@ -142,5 +142,5 @@ int verifyFK(char *, char *);
 
 transaction *start_transaction();
 void commitTransaction(transaction *t);
-void rollbackTransaction();
+void rollbackTransaction(transaction* t);
 void end_transaction(transaction *t);
