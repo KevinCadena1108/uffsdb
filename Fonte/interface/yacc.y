@@ -26,8 +26,9 @@
 #endif
 
 extern char* yytext[];
-extern FILE * yyin;
+extern FILE* yyin;
 extern FILE* outFile_p;
+transaction* tr;
 
 int yywrap() {
     return 1;
@@ -67,7 +68,7 @@ connection: CONNECT OBJECT {connect(*yytext); GLOBAL_PARSER.consoleFlag = 1; ret
 
 qualquer_coisa: OBJECT {GLOBAL_PARSER.consoleFlag = 1; GLOBAL_PARSER.noerror = 0; return 0;};
 
-/* EXIT *
+/* EXIT */
 exit_program: QUIT {exit(0);};
 
 clear: CLEAR {clear(); GLOBAL_PARSER.consoleFlag = 1; return 0;};
@@ -223,25 +224,25 @@ create_index: CREATE INDEX ON {setMode(OP_CREATE_INDEX);} table parentesis_open 
 atributo: OBJECT {setColumnBtreeCreate(yytext);}
 
 begin_transaction: BEGIN_TR {
-    start_transation();
+    tr = start_transaction();
     GLOBAL_PARSER.consoleFlag = 1;
     return 0;
 };
 
 end_transaction: END_TR {
-    end_transaction();
+    end_transaction(tr);
     GLOBAL_PARSER.consoleFlag = 1;
     return 0;
 };
 
 commit_transaction: COMMIT_TR {
-    commitTransaction();
+    commitTransaction(tr);
     GLOBAL_PARSER.consoleFlag = 1;
     return 0;
 };
 
 rollback_transaction: ROLLBACK_TR {
-    rollbackTransaction();
+    rollbackTransaction(tr);
     GLOBAL_PARSER.consoleFlag = 1;
     return 0;
 };
