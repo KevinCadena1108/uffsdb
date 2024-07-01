@@ -28,6 +28,7 @@
 
 #ifndef FEXPRESSAO
   #include "Expressao.h"
+#include "sqlcommands.h"
 #endif
 /* ----------------------------------------------------------------------------------------------
     Objetivo:   Recebe o nome de uma tabela e engloba as funções leObjeto() e leSchema().
@@ -332,6 +333,11 @@ void commitTransaction(transaction* t) {
     free(t);
     printf("Transaction %d committed\n", id);
 }
+
+void rollbackTransaction(){
+    printf("rollback");
+}
+
 void end_transaction(transaction* t){
       return commitTransaction(t);
 }
