@@ -49,11 +49,13 @@ int yywrap() {
         LIST_TABLES LIST_TABLE  CONNECT     HELP        LIST_DBASES
         CLEAR       CONTR       WHERE       OPERADOR    RELACIONAL
         LOGICO      ASTERISCO   SINAL       FECHA_P     ABRE_P
-        STRING      INDEX       ON;
+        STRING      INDEX       ON          BEGIN_TR    END_TR
+        COMMIT_TR   ROLLBACK_TR;
 %%
 start: insert | select | create_table | create_database | drop_table | drop_database
      | table_attr | list_tables | connection | exit_program | semicolon {GLOBAL_PARSER.consoleFlag = 1; return 0;}
      | help_pls | list_databases | clear | contributors | create_index
+     | begin_transaction | end_transaction | commit_transaction | rollback_transaction
      | qualquer_coisa | /*epsilon*/;
 
 /*--------------------------------------------------*/
@@ -65,7 +67,7 @@ connection: CONNECT OBJECT {connect(*yytext); GLOBAL_PARSER.consoleFlag = 1; ret
 
 qualquer_coisa: OBJECT {GLOBAL_PARSER.consoleFlag = 1; GLOBAL_PARSER.noerror = 0; return 0;};
 
-/* EXIT */
+/* EXIT *
 exit_program: QUIT {exit(0);};
 
 clear: CLEAR {clear(); GLOBAL_PARSER.consoleFlag = 1; return 0;};
@@ -220,7 +222,29 @@ create_index: CREATE INDEX ON {setMode(OP_CREATE_INDEX);} table parentesis_open 
 
 atributo: OBJECT {setColumnBtreeCreate(yytext);}
 
+begin_transaction: BEGIN_TR {
+    start_transation();
+    GLOBAL_PARSER.consoleFlag = 1;
+    return 0;
+};
 
+end_transaction: END_TR {
+    end_transaction();
+    GLOBAL_PARSER.consoleFlag = 1;
+    return 0;
+};
+
+commit_transaction: COMMIT_TR {
+    commitTransaction();
+    GLOBAL_PARSER.consoleFlag = 1;
+    return 0;
+};
+
+rollback_transaction: ROLLBACK_TR {
+    rollbackTransaction();
+    GLOBAL_PARSER.consoleFlag = 1;
+    return 0;
+};
 
 /* END */
 %%
