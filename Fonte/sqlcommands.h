@@ -15,6 +15,7 @@ int allColumnsExists(rc_insert *, table *);
 char getInsertedType(rc_insert *, char *c, table *);
 char *getInsertedValue(rc_insert *, char *, table *);
 int typesCompatible(char , char);
+
 /*
     Esta função finaliza a inserção de valores em uma tabela. Assume que o usuário entrou com todos
     os campos de uma tupla completa.
@@ -53,7 +54,7 @@ int excluirTabela(char *);
                 SUCCESS,
                 ERRO_DE_PARAMETRO.
    ---------------------------------------------------------------------------------------------*/
-int createIndex(rc_insert *);
+void createIndex(rc_insert *t);
 /* ----------------------------------------------------------------------------------------------
     Objetivo:   Copia todas as informações menos a tabela do objeto, que será removida.
     Parametros: Objeto que será removido do schema.
@@ -100,7 +101,6 @@ tp_table *abreTabela(char *, struct fs_objects *, tp_table **);
  */
 void createTable(rc_insert *);
 
-
 /*
   Objetivo: Verificar se a projeção feita no insert é válida
   Parametros: Uma lista com a projeção, um ponteiro
@@ -139,3 +139,8 @@ inf_where *novoResWhere(void *tk,int id);
 int verifyFieldName(char **, int );
 ////
 int verifyFK(char *, char *);
+
+transaction *start_transaction();
+void commitTransaction(transaction *t);
+void rollbackTransaction(transaction* t);
+void end_transaction(transaction *t);
