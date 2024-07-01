@@ -28,8 +28,8 @@
 (?i:ON)						    return ON;
 (?i:INDEX)						return INDEX;
 (?i:INTEGER)					return INTEGER;
-(?i:AND)					return LOGICO;
-(?i:OR)					return LOGICO;
+(?i:AND)						return LOGICO;
+(?i:OR)							return LOGICO;
 (?i:INT)						return INTEGER;
 (?i:VARCHAR)					return VARCHAR;
 (?i:CHAR)						return CHAR;
@@ -45,6 +45,10 @@ help							return HELP;
 [\\][h]+[^\n]*					{invalidCommand(yytext);};
 [\\][\?]						return HELP;
 (?i:CLEAR)						return CLEAR;
+(?i:BEGIN)						return BEGIN_TR;
+(?i:END)						return END_TR;
+(?i:COMMIT)						return COMMIT_TR;
+(?i:ROLLBACK)					return ROLLBACK_TR;
 
 [,]								return *yytext;
 [;]								return *yytext;
