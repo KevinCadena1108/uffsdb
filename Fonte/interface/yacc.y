@@ -51,12 +51,12 @@ int yywrap() {
         CLEAR       CONTR       WHERE       OPERADOR    RELACIONAL
         LOGICO      ASTERISCO   SINAL       FECHA_P     ABRE_P
         STRING      INDEX       ON          BEGIN_TR    END_TR
-        COMMIT_TR   ROLLBACK_TR UPDATE      SET;
+        COMMIT_TR   ROLLBACK_TR;
 %%
 start: insert | select | create_table | create_database | drop_table | drop_database
      | table_attr | list_tables | connection | exit_program | semicolon {GLOBAL_PARSER.consoleFlag = 1; return 0;}
      | help_pls | list_databases | clear | contributors | create_index
-     | begin_transaction | end_transaction | commit_transaction | rollback_transaction | update_statement
+     | begin_transaction | end_transaction | commit_transaction | rollback_transaction 
      | qualquer_coisa | /*epsilon*/;
 
 /*--------------------------------------------------*/
@@ -246,34 +246,6 @@ rollback_transaction: ROLLBACK_TR {
     GLOBAL_PARSER.consoleFlag = 1;
     return 0;
 };
-
-/* UPDATE */
-
-update_statement: UPDATE table set_clause where_clause semicolon { return 0; };
-
-set_clause: column '=' expression { setUpdate($3); };
-
-where_clause: /* optional */ | WHERE condition_list;
-
-condition_list: condition { addCondition($1); } | condition LOGICO condition_list;
-
-condition: column RELACIONAL value;
-
-expression: value { $$ = $1; }
-          | column { $$ = $1; }
-          | column '+' value { asprintf(&$$, "%s + %s", $1, $3); free($1); free($3); }
-          | column '-' value { asprintf(&$$, "%s - %s", $1, $3); free($1); free($3); };
-
-value: VALUE { $$ = $1; }
-     | NUMBER { $$ = $1; }
-     | STRING { $$ = $1; };
-
-column: OBJECT { $$ = strdup($1); };
-
-
-
-
-
 
 /* END */
 %%

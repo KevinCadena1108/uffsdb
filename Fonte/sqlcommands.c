@@ -302,28 +302,6 @@ int verificaChavePK(char *nomeTabela, column *c, char *nomeCampo, char *valorCam
 }
 
 
-column updateColumns[MAX_COLUMNS];
-inf_where conditions[MAX_CONDITIONS];
-int updateColumnCount = 0;
-int conditionCount = 0;
-
-void setUpdate(char* str) {
-    if (updateColumnCount < MAX_COLUMNS) {
-        updateColumns[updateColumnCount].nomeCampo = strdup(str); // Atribui o nome da coluna a ser atualizada
-        updateColumnCount++;
-    } else {
-        printf("ERROR: Exceeded maximum number of update columns.\n");
-    }
-}
-
-void addCondition(char* str) {
-    if (conditionCount < MAX_CONDITIONS) {
-        conditions[conditionCount].token = strdup(str); // Adiciona a condição à lista de condições
-        conditionCount++;
-    } else {
-        printf("ERROR: Exceeded maximum number of conditions.\n");
-    }
-}
 
 //TRANSAÇÕES
 transaction *active_transactions = NULL;
