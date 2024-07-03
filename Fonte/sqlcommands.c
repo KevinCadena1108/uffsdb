@@ -302,7 +302,6 @@ int verificaChavePK(char *nomeTabela, column *c, char *nomeCampo, char *valorCam
 }
 
 
-
 column updateColumns[MAX_COLUMNS];
 inf_where conditions[MAX_CONDITIONS];
 int updateColumnCount = 0;
