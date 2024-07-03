@@ -140,6 +140,12 @@ int verifyFieldName(char **, int );
 ////
 int verifyFK(char *, char *);
 
+#define MAX_COLUMNS 10
+#define MAX_CONDITIONS 10
+
+void setUpdate(char* str);
+void addCondition(char* str);
+
 transaction *start_transaction();
 void commitTransaction(transaction *t);
 void rollbackTransaction(transaction* t);
