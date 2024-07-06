@@ -322,35 +322,64 @@ transaction* start_transaction() {
     return t;
 }
 
+column *copia_colunas(column *dados) {
+    if (dados == NULL) return NULL;
+
+    column *copia = (column *)malloc(sizeof(column));
+    if (copia == NULL) {
+        printf("Erro: Falha ao alocar memória para cópia de colunas.\n");
+        return NULL;
+    }
+    copia->tipoCampo = dados->tipoCampo;
+    strncpy(copia->nomeCampo, dados->nomeCampo, TAMANHO_NOME_CAMPO);
+    copia->nomeCampo[TAMANHO_NOME_CAMPO - 1] = '\0';
+
+    copia->valorCampo = strdup(dados->valorCampo);
+    if (copia->valorCampo == NULL) {
+        printf("Erro: Falha ao alocar memória para valor do campo.\n");
+        free(copia);
+        return NULL;
+    }
+
+    copia->next = copia_colunas(dados->next);
+
+    return copia;
+}
+
 void add_operation_to_active_transaction(const char *operacao, const char *tabela, column *dados) {
-    // Alocar memória para uma nova operação no log da transação
     transaction_log *nova_operacao = (transaction_log *)malloc(sizeof(transaction_log));
     if (nova_operacao == NULL) {
         printf("Erro: Falha ao alocar memória para nova operação no log da transação.\n");
         return;
     }
 
-    // Preencher os campos da nova operação
-    strcpy(nova_operacao->operacao, operacao);
-    strcpy(nova_operacao->tabela, tabela);
-    nova_operacao->dados = dados;
-    nova_operacao->next = NULL;  // Garantir que a nova operação seja o último elemento da lista
-    printf("aqui");
+    strncpy(nova_operacao->operacao, operacao, sizeof(nova_operacao->operacao) - 1);
+    nova_operacao->operacao[sizeof(nova_operacao->operacao) - 1] = '\0';
+    strncpy(nova_operacao->tabela, tabela, sizeof(nova_operacao->tabela) - 1);
+    nova_operacao->tabela[sizeof(nova_operacao->tabela) - 1] = '\0';
 
-    // Adicionar a nova operação ao final do log da transação ativa
+    nova_operacao->dados = copia_colunas(dados);
+    nova_operacao->next = NULL;
+
+    if (active_transactions == NULL) {
+        active_transactions = (transaction *)malloc(sizeof(transaction));
+        if (active_transactions == NULL) {
+            printf("Erro: Falha ao alocar memória para a transação ativa.\n");
+            free(nova_operacao);
+            return;
+        }
+        active_transactions->log = NULL;
+        active_transactions->next = NULL;
+    }
+
     if (active_transactions->log == NULL) {
-        // Se o log da transação está vazio, a nova operação será o primeiro elemento
         active_transactions->log = nova_operacao;
-        printf("aqui2");
     } else {
-        // Caso contrário, encontrar o último elemento e encadear a nova operação
-        printf("aqui3");
         transaction_log *ultimo = active_transactions->log;
         while (ultimo->next != NULL) {
             ultimo = ultimo->next;
         }
         ultimo->next = nova_operacao;
-        printf("aqui4");
     }
 }
 
@@ -371,26 +400,15 @@ int operation_already_in_transaction_log(const char *operacao, const char *tabel
 // Função para imprimir os registros do log da transação
 
 void print_transaction_log(transaction_log *log) {
-    if (log == NULL) {
-        printf("Log da transação está vazio.\n");
-        return;
-    }
-
-    transaction_log *current = log;
-    while (current != NULL) {
-        printf("Operação: %s\n", current->operacao);
-        printf("Tabela: %s\n", current->tabela);
-
-        // Imprimir detalhes de cada campo (se houver)
-        column *col = current->dados;
-        while (col != NULL) {
-            printf("Campo: %s, Tipo: %c, Valor: %s\n", col->nomeCampo, col->tipoCampo, col->valorCampo);
-            col = col->next;
+    while (log != NULL) {
+        printf("Operação: %s\n", log->operacao);
+        printf("Tabela: %s\n", log->tabela);
+        column *dados = log->dados;
+        while (dados != NULL) {
+            printf("Campo: %s, Tipo: %c, Valor: %s\n", dados->nomeCampo, dados->tipoCampo, dados->valorCampo);
+            dados = dados->next;
         }
-
-        printf("\n");  // Linha em branco entre operações
-
-        current = current->next;
+        log = log->next;
     }
 }
 
