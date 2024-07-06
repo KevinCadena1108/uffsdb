@@ -307,14 +307,93 @@ int verificaChavePK(char *nomeTabela, column *c, char *nomeCampo, char *valorCam
 transaction *active_transactions = NULL;
 int currentTid = 0;
 
+// Função para iniciar uma nova transação
+
 transaction* start_transaction() {
     transaction *t = (transaction*)malloc(sizeof(transaction));
+    if (t == NULL) {
+        fprintf(stderr, "Erro ao alocar memória para transação.\n");
+        return NULL;
+    }
     t->id = ++currentTid;
     t->log = NULL;
     t->next = active_transactions;
     active_transactions = t;
     return t;
 }
+
+void add_operation_to_active_transaction(const char *operacao, const char *tabela, column *dados) {
+    // Alocar memória para uma nova operação no log da transação
+    transaction_log *nova_operacao = (transaction_log *)malloc(sizeof(transaction_log));
+    if (nova_operacao == NULL) {
+        printf("Erro: Falha ao alocar memória para nova operação no log da transação.\n");
+        return;
+    }
+
+    // Preencher os campos da nova operação
+    strcpy(nova_operacao->operacao, operacao);
+    strcpy(nova_operacao->tabela, tabela);
+    nova_operacao->dados = dados;
+    nova_operacao->next = NULL;  // Garantir que a nova operação seja o último elemento da lista
+    printf("aqui");
+
+    // Adicionar a nova operação ao final do log da transação ativa
+    if (active_transactions->log == NULL) {
+        // Se o log da transação está vazio, a nova operação será o primeiro elemento
+        active_transactions->log = nova_operacao;
+        printf("aqui2");
+    } else {
+        // Caso contrário, encontrar o último elemento e encadear a nova operação
+        printf("aqui3");
+        transaction_log *ultimo = active_transactions->log;
+        while (ultimo->next != NULL) {
+            ultimo = ultimo->next;
+        }
+        ultimo->next = nova_operacao;
+        printf("aqui4");
+    }
+}
+
+int operation_already_in_transaction_log(const char *operacao, const char *tabela, column *dados) {
+    transaction_log *log = active_transactions->log;
+
+    while (log != NULL) {
+        if (strcmp(log->operacao, operacao) == 0 && strcmp(log->tabela, tabela) == 0) {
+            // Comparar dados se necessário (depende da lógica específica)
+            return 1; // Já existe uma operação igual no log da transação
+        }
+        log = log->next;
+    }
+
+    return 0; // Não encontrou uma operação igual no log da transação
+}
+
+// Função para imprimir os registros do log da transação
+
+void print_transaction_log(transaction_log *log) {
+    if (log == NULL) {
+        printf("Log da transação está vazio.\n");
+        return;
+    }
+
+    transaction_log *current = log;
+    while (current != NULL) {
+        printf("Operação: %s\n", current->operacao);
+        printf("Tabela: %s\n", current->tabela);
+
+        // Imprimir detalhes de cada campo (se houver)
+        column *col = current->dados;
+        while (col != NULL) {
+            printf("Campo: %s, Tipo: %c, Valor: %s\n", col->nomeCampo, col->tipoCampo, col->valorCampo);
+            col = col->next;
+        }
+
+        printf("\n");  // Linha em branco entre operações
+
+        current = current->next;
+    }
+}
+
 
 void commitTransaction(transaction* t) {
     if (t == NULL) {
@@ -576,70 +655,84 @@ int finalizaInsert(char *nome, column *c){
  *         Se os valores forem válidos, insere um novo valor.
  */
 void insert(rc_insert *s_insert) {
-	int i;
-	table *tabela = (table *)malloc(sizeof(table));
-	tabela->esquema = NULL;
-	memset(tabela, 0, sizeof(table));
-	column *colunas = NULL;
-	tp_table *esquema = NULL;
-	struct fs_objects objeto;
-	memset(&objeto, 0, sizeof(struct fs_objects));
-	char  flag=0;
+    int i;
+    table *tabela = (table *)malloc(sizeof(table));
+    tabela->esquema = NULL;
+    memset(tabela, 0, sizeof(table));
+    column *colunas = NULL;
+    tp_table *esquema = NULL;
+    struct fs_objects objeto;
+    memset(&objeto, 0, sizeof(struct fs_objects));
+    char  flag=0;
 
-	abreTabela(s_insert->objName, &objeto, &tabela->esquema); //retorna o esquema para a insere valor
-	strcpylower(tabela->nome, s_insert->objName);
+    abreTabela(s_insert->objName, &objeto, &tabela->esquema); // Retorna o esquema para a inserção de valores
+    strcpylower(tabela->nome, s_insert->objName);
 
-	if(s_insert->columnName != NULL){
-		if (allColumnsExists(s_insert, tabela)){
-			for (esquema = tabela->esquema; esquema != NULL; esquema = esquema->next){
-				if(typesCompatible(esquema->tipo,getInsertedType(s_insert, esquema->nome, tabela))){
-					colunas = insereValor(tabela, colunas, esquema->nome, getInsertedValue(s_insert, esquema->nome, tabela));
-				}
-        else {
-					printf("ERROR: data type invalid to column '%s' of relation '%s' (expected: %c, received: %c).\n", esquema->nome, tabela->nome, esquema->tipo, getInsertedType(s_insert, esquema->nome, tabela));
-					flag=1;
-				}
-			}
-		}
-    else {
-			flag = 1;
-		}
-	}
-  else {
-		if (s_insert->N == objeto.qtdCampos) {
-			for(i=0; i < objeto.qtdCampos; i++) {
+    // Montar colunas para inserção
+    if (s_insert->columnName != NULL) {
+        if (allColumnsExists(s_insert, tabela)) {
+            for (esquema = tabela->esquema; esquema != NULL; esquema = esquema->next) {
+                if (typesCompatible(esquema->tipo, getInsertedType(s_insert, esquema->nome, tabela))) {
+                    colunas = insereValor(tabela, colunas, esquema->nome, getInsertedValue(s_insert, esquema->nome, tabela));
+                } else {
+                    printf("ERROR: data type invalid to column '%s' of relation '%s' (expected: %c, received: %c).\n", esquema->nome, tabela->nome, esquema->tipo, getInsertedType(s_insert, esquema->nome, tabela));
+                    flag = 1;
+                    break;
+                }
+            }
+        } else {
+            flag = 1;
+        }
+    } else {
+        if (s_insert->N == objeto.qtdCampos) {
+            for (i = 0; i < objeto.qtdCampos; i++) {
+                if (s_insert->type[i] == 'S' && tabela->esquema[i].tipo == 'C') {
+                    s_insert->values[i][1] = '\0';
+                    s_insert->type[i] = 'C';
+                }
+                if (s_insert->type[i] == 'I' && tabela->esquema[i].tipo == 'D') {
+                    s_insert->type[i] = 'D';
+                }
+                if (s_insert->type[i] == tabela->esquema[i].tipo) {
+                    colunas = insereValor(tabela, colunas, tabela->esquema[i].nome, s_insert->values[i]);
+                } else {
+                    printf("ERROR: data type invalid to column '%s' of relation '%s' (expected: %c, received: %c).\n", tabela->esquema[i].nome, tabela->nome, tabela->esquema[i].tipo, s_insert->type[i]);
+                    flag = 1;
+                    break;
+                }
+            }
+        } else {
+            printf("ERROR: INSERT has more expressions than target columns.\n");
+            flag = 1;
+        }
+    }
 
-				if(s_insert->type[i] == 'S' && tabela->esquema[i].tipo == 'C') {
-					s_insert->values[i][1] = '\0';
-					s_insert->type[i] = 'C';
-				}
+    // Decidir onde finalizar o INSERT
+    if (!flag) {
+        if (active_transactions != NULL) {
+            // Verificar se a operação já está no log da transação ativa
+            //if (!operation_already_in_transaction_log("insert", s_insert->objName, colunas)) {
+                // Se não estiver, adicionar ao log da transação
+                add_operation_to_active_transaction("insert", s_insert->objName, colunas);
+                print_transaction_log(active_transactions->log);
+            //}
+            // Imprimir log da transação ativa após cada inserção
+            //printf("Registros no log da transação:\n");
+            //print_transaction_log(active_transactions->log);
+        } else {
+            // Se não há transação ativa, finalizar o INSERT no disco diretamente
+            if (finalizaInsert(s_insert->objName, colunas) == 0) {
+                printf("INSERT 0 1\n");
+            }
+        }
+    }
 
-				if(s_insert->type[i] == 'I' && tabela->esquema[i].tipo == 'D') {
-					s_insert->type[i] = 'D';
-				}
-
-				if(s_insert->type[i] == tabela->esquema[i].tipo)
-					colunas = insereValor(tabela, colunas, tabela->esquema[i].nome, s_insert->values[i]);
-				else {
-					printf("ERROR: data type invalid to column '%s' of relation '%s' (expected: %c, received: %c).\n", tabela->esquema[i].nome, tabela->nome, tabela->esquema[i].tipo, s_insert->type[i]);
-					flag=1;
-				}
-			}
-		}
-    else {
-      printf("ERROR: INSERT has more expressions than target columns.\n");
-		  flag = 1;
-		}
-	}
-
-  if (!flag && finalizaInsert(s_insert->objName, colunas) == SUCCESS)
-    printf("INSERT 0 1\n");
-
-	//freeTp_table(&esquema, objeto.qtdCampos);
-	free(esquema);
-	freeColumn(colunas);
-	freeTable(tabela);
+    // Liberar memória
+    free(esquema);
+    freeColumn(colunas);
+    freeTable(tabela);
 }
+
 
 //select * from t4;
 int validaProj(Lista *proj,column *colunas,int qtdColunas,char *pert){

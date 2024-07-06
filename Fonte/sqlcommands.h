@@ -145,3 +145,4 @@ transaction *start_transaction();
 void commitTransaction(transaction *t);
 void rollbackTransaction(transaction* t);
 void end_transaction(transaction *t);
+int operation_already_in_transaction_log(const char *operacao, const char *tabela, column *dados);

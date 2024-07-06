@@ -77,7 +77,7 @@ typedef struct rc_parser {
 typedef struct transaction_log {
     char operacao[10];  //Operação (insert,delete,update)
     char tabela[20];    //Nome da tabela
-    column dados;       //Dados da operação
+    column *dados;       //Dados da operação
     struct transaction_log *next;  //Próxima operação no log
 } transaction_log;
 
