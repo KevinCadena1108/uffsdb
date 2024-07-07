@@ -470,7 +470,6 @@ void rollbackTransaction(transaction* t){
 
     removerMemoriaDoLog(t);
 
-    t->status = 1;
     free(t);
 
     printf("Transação abortada.\n");
