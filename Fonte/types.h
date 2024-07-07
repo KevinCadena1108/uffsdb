@@ -83,6 +83,7 @@ typedef struct transaction_log {
 
 typedef struct transaction {
     int id;
+    int status; // 0 para não comitada, 1 para comitada
     transaction_log *log; //Log de operações
     struct transaction *next;  //Próxima transação
 

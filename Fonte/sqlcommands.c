@@ -316,6 +316,7 @@ transaction* start_transaction() {
         return NULL;
     }
     t->id = ++currentTid;
+    t->status = 0;
     t->log = NULL;
     t->next = active_transactions;
     active_transactions = t;
@@ -415,24 +416,43 @@ void print_transaction_log(transaction_log *log) {
 
 void commitTransaction(transaction* t) {
     if (t == NULL) {
-        printf("Sem transacoes\n");
+        printf("Erro: Transação inválida.\n");
         return;
     }
 
-    //TO-DO: Limpar os dados do log da transação
+    transaction_log *log = t->log;
+    while (log != NULL) {
+        if (strcmp(log->operacao, "insert") == 0) {
+            finalizaInsert(log->tabela, log->dados);
+        }
+        log = log->next;
+    }
 
+    // Remover a transação da lista de transações ativas
     if (active_transactions == t) {
         active_transactions = t->next;
     } else {
-        transaction* prev = active_transactions;
-        while (prev->next != t) {
+        transaction *prev = active_transactions;
+        while (prev->next != NULL && prev->next != t) {
             prev = prev->next;
         }
-        prev->next = t->next;
+        if (prev->next == t) {
+            prev->next = t->next;
+        }
     }
-    int id = t->id;
+
+    // Limpar memória do log da transação
+    transaction_log *temp;
+    while (t->log != NULL) {
+        temp = t->log;
+        t->log = t->log->next;
+        free(temp);
+    }
+    
+    t->status = 1;
     free(t);
-    printf("Transaction %d committed\n", id);
+
+    printf("Transação comitada com sucesso.\n");
 }
 
 void rollbackTransaction(transaction* t){
@@ -440,7 +460,19 @@ void rollbackTransaction(transaction* t){
 }
 
 void end_transaction(transaction* t){
-      return commitTransaction(t);
+    if (t == NULL) {
+        printf("Erro: Transação inválida.\n");
+        return;
+    }
+
+    if (t->status == 0) {
+        // Se a transação não foi comitada, comitar
+        commitTransaction(t);
+    } else {
+        // Apenas finalize a transação
+        printf("Transação comitada.\n");
+
+    }
 }
 
 /////
