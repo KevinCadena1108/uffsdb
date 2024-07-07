@@ -408,7 +408,7 @@ void print_transaction_log(transaction_log *log) {
         printf("Tabela: %s\n", log->tabela);
         column *dados = log->dados;
         while (dados != NULL) {
-            printf("Campo: %s, Tipo: %c, Valor: %s\n", dados->nomeCampo, dados->tipoCampo, dados->valorCampo);
+            printf("Campo: %s, Valor: %s\n", dados->nomeCampo, dados->valorCampo);
             dados = dados->next;
         }
         log = log->next;
@@ -460,7 +460,6 @@ void commitTransaction(transaction* t) {
     free(t);
 
 }
-
 
 void rollbackTransaction(transaction* t){
     if (t == NULL) {
