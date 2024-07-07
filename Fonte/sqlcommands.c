@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 ////
 #ifndef FBTREE // includes only if this flag is not defined (preventing duplication)
    #include "btree.h"
@@ -309,6 +310,7 @@ int currentTid = 0;
 
 // Função para iniciar uma nova transação
 
+
 transaction* start_transaction() {
     transaction *t = (transaction*)malloc(sizeof(transaction));
     if (t == NULL) {
@@ -413,6 +415,28 @@ void print_transaction_log(transaction_log *log) {
     }
 }
 
+void removerTransacaoAtiva(transaction* t){
+   if (active_transactions == t) {
+        active_transactions = t->next;
+    } else {
+        transaction *prev = active_transactions;
+        while (prev->next != NULL && prev->next != t) {
+            prev = prev->next;
+        }
+        if (prev->next == t) {
+            prev->next = t->next;
+        }
+    }
+}
+
+void removerMemoriaDoLog(transaction* t){
+    transaction_log *temp;
+    while (t->log != NULL) {
+        temp = t->log;
+        t->log = t->log->next;
+        free(temp);
+    }
+}
 
 void commitTransaction(transaction* t) {
     if (t == NULL) {
@@ -428,35 +452,33 @@ void commitTransaction(transaction* t) {
         log = log->next;
     }
 
-    // Remover a transação da lista de transações ativas
-    if (active_transactions == t) {
-        active_transactions = t->next;
-    } else {
-        transaction *prev = active_transactions;
-        while (prev->next != NULL && prev->next != t) {
-            prev = prev->next;
-        }
-        if (prev->next == t) {
-            prev->next = t->next;
-        }
-    }
+    removerTransacaoAtiva(t);
 
-    // Limpar memória do log da transação
-    transaction_log *temp;
-    while (t->log != NULL) {
-        temp = t->log;
-        t->log = t->log->next;
-        free(temp);
-    }
+    removerMemoriaDoLog(t);
     
     t->status = 1;
     free(t);
 
-    printf("Transação comitada com sucesso.\n");
 }
 
+
 void rollbackTransaction(transaction* t){
-    //printf("rollback");
+    if (t == NULL) {
+        printf("Erro: Transação inválida.\n");
+        return;
+    }
+    removerTransacaoAtiva(t);
+
+    removerMemoriaDoLog(t);
+
+    t->status = 1;
+    free(t);
+
+    printf("Transação abortada.\n");
+ }
+
+bool foiComitada(transaction* t){
+  return t->status == 1 ? true : false;
 }
 
 void end_transaction(transaction* t){
@@ -465,14 +487,12 @@ void end_transaction(transaction* t){
         return;
     }
 
-    if (t->status == 0) {
-        // Se a transação não foi comitada, comitar
+    if (!foiComitada(t)) {
         commitTransaction(t);
-    } else {
-        // Apenas finalize a transação
-        printf("Transação comitada.\n");
-
     }
+
+    printf("Transação comitada.\n");
+
 }
 
 /////
