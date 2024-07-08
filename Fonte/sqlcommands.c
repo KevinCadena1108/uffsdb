@@ -310,7 +310,8 @@ int currentTid = 0;
 
 // Função para iniciar uma nova transação
 
-
+// Essa função aloca a memória necessária para armazenar a transação
+// e atribui valores para seus atributos
 transaction* start_transaction() {
     transaction *t = (transaction*)malloc(sizeof(transaction));
     if (t == NULL) {
@@ -318,12 +319,14 @@ transaction* start_transaction() {
         return NULL;
     }
     t->id = ++currentTid;
-    t->status = 0;
-    t->log = NULL;
-    t->next = active_transactions;
+    t->status = 0;                 // A transação começa como não comitada
+    t->log = NULL;                 // Inicializa o log
+    t->next = active_transactions; // Coloca a nova transação no início da lista de transações ativas
     active_transactions = t;
     return t;
 }
+
+// Essa função faz a cópia de uma lista de encadeada da estrutura column
 
 column *copia_colunas(column *dados) {
     if (dados == NULL) return NULL;
@@ -348,6 +351,8 @@ column *copia_colunas(column *dados) {
 
     return copia;
 }
+
+// Adiciona a operação ao log da transação ativa
 
 void add_operation_to_active_transaction(const char *operacao, const char *tabela, column *dados) {
     transaction_log *nova_operacao = (transaction_log *)malloc(sizeof(transaction_log));
@@ -386,23 +391,10 @@ void add_operation_to_active_transaction(const char *operacao, const char *tabel
     }
 }
 
-int operation_already_in_transaction_log(const char *operacao, const char *tabela, column *dados) {
-    transaction_log *log = active_transactions->log;
-
-    while (log != NULL) {
-        if (strcmp(log->operacao, operacao) == 0 && strcmp(log->tabela, tabela) == 0) {
-            // Comparar dados se necessário (depende da lógica específica)
-            return 1; // Já existe uma operação igual no log da transação
-        }
-        log = log->next;
-    }
-
-    return 0; // Não encontrou uma operação igual no log da transação
-}
 
 // Função para imprimir os registros do log da transação
 
-void print_transaction_log(transaction_log *log) {
+/*void print_transaction_log(transaction_log *log) {
     while (log != NULL) {
         printf("Operação: %s\n", log->operacao);
         printf("Tabela: %s\n", log->tabela);
@@ -413,7 +405,7 @@ void print_transaction_log(transaction_log *log) {
         }
         log = log->next;
     }
-}
+}*/
 
 void removerTransacaoAtiva(transaction* t){
    if (active_transactions == t) {
@@ -457,7 +449,6 @@ void commitTransaction(transaction* t) {
     removerMemoriaDoLog(t);
     
     t->status = 1;
-    free(t);
 
 }
 
@@ -490,6 +481,7 @@ void end_transaction(transaction* t){
     }
 
     printf("Transação comitada.\n");
+    free(t);
 
 }
 
@@ -775,20 +767,12 @@ void insert(rc_insert *s_insert) {
         }
     }
 
-    // Decidir onde finalizar o INSERT
+    // Verifica se existe alguma transação
     if (!flag) {
-        if (active_transactions != NULL) {
-            // Verificar se a operação já está no log da transação ativa
-            //if (!operation_already_in_transaction_log("insert", s_insert->objName, colunas)) {
-                // Se não estiver, adicionar ao log da transação
-                add_operation_to_active_transaction("insert", s_insert->objName, colunas);
-                print_transaction_log(active_transactions->log);
-            //}
-            // Imprimir log da transação ativa após cada inserção
-            //printf("Registros no log da transação:\n");
-            //print_transaction_log(active_transactions->log);
+        if (active_transactions != NULL) {          
+          add_operation_to_active_transaction("insert", s_insert->objName, colunas);
+          //print_transaction_log(active_transactions->log);
         } else {
-            // Se não há transação ativa, finalizar o INSERT no disco diretamente
             if (finalizaInsert(s_insert->objName, colunas) == 0) {
                 printf("INSERT 0 1\n");
             }
@@ -1412,3 +1396,4 @@ void createIndex(rc_insert *t) {
 }
 
 ///////
+
